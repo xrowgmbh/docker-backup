@@ -18,6 +18,7 @@ RUN yum install -y centos-release-scl-rh && \
 WORKDIR /backup
 
 VOLUME ["/backup"]
+USER root
 
 ENTRYPOINT [ "/bin/sh", "-c" ]
 
