@@ -11,7 +11,8 @@ RUN yum install -y centos-release-scl-rh && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
-    mkdir -p /backup && chmod 777 /backup \
+    mkdir -p /backup && \
+    chmod 777 /backup && \
     chmod -R 600 /root/.ssh/config
 
 WORKDIR /backup
