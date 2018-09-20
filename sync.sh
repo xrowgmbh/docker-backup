@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-if [ -z "$URI" ]; then
+if [ -z "$SRC_URI" ]; then
     echo "URI enviroment variable is not present!"
     exit 1
 fi 
@@ -16,10 +15,10 @@ echo "Setting facts ..."
 # extract the protocol
 if [ -z $(echo URI | grep ://)]
 then
-    proto="${URI%%://*}"
+    proto="${SRC_URI%%://*}"
 fi
 
-url=$(echo $URI | sed -e s,$proto://,,g)
+url=$(echo $SRC_URI | sed -e s,$proto://,,g)
 
 # extract the user (if any)
 user="$(echo $url | grep @ | cut -d@ -f1)"
@@ -31,7 +30,6 @@ then
 else
   host=$(echo $url | sed -e s,$user@,,g | cut -d/ -f1)
 fi
-
 
 if [[ $host =~ ":" ]]
 then
@@ -45,6 +43,7 @@ path="/$(echo $url | grep / | cut -d/ -f2-)"
 
 namespace="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
 token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+hostname="$(hostname)"
 
 echo "url: $url"
 echo "proto: $proto"
@@ -55,6 +54,7 @@ echo "port: $port"
 echo "path: $path"
 echo "dest: $DEST"
 echo "namespace: $namespace"
+echo "pod name: $hostname"
 echo ""
 
 echo "Starting a ssh test to see if the target server is reachable."
@@ -91,13 +91,13 @@ fi
 
 echo "rsync complete with no errors!"
 echo ""
-podlabels="$(curl -s -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods |  jq -r '.items[].metadata.labels.name')"
+podlabels="$(curl -s -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods |  jq -r '.items[].metadata.name')"
 podlabels=($podlabels)
 for podlabel in "${podlabels[@]}"
 do
-  if [[ "$podlabel" != "null" && "$podlabel" != *"import"* && "$podlabel" != *"backup"* && "$podlabel" != *"cron"* ]]
+  if [[ "$podlabel" != "$hostname" ]]
   then
     echo "Deleting POD with name $podlabel"
-    curl -X DELETE -s --output /dev/null -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods?labelSelector=name=$podlabel
+    curl -X DELETE -s --output /dev/null -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods?fieldSelector=metadata.name=$podlabel
   fi
 done
