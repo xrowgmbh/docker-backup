@@ -5,6 +5,8 @@ MAINTAINER "Björn Dieding" <bjoern@xrow.de>
 ADD config /root/.ssh/config
 ADD sync.sh /sync.sh
 ENV PATH=/opt/rh/rh-mariadb102/root/usr/bin:$PATH
+# default variable for sync.sh - can be overwritten by kubernetes/openshift
+ENV KEY=/root/.ssh/id_rsa
 
 RUN yum install -y centos-release-scl-rh && \
     INSTALL_PKGS="rsync tar gettext hostname bind-utils gzip rh-mariadb102  sshpass openssh openssh-clients epel-release" && \

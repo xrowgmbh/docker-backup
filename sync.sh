@@ -63,7 +63,7 @@ if [ -n "$password" ]
 then
   sshpass -p $password ssh -q -o StrictHostKeyChecking=no $user@$host exit
 else 
-  ssh -o StrictHostKeyChecking=no $user@$host exit
+  ssh -q -i $KEY -o StrictHostKeyChecking=no $user@$host exit
 fi
 #check return code and exit if target server was not reachable
 rc=$? 
@@ -79,7 +79,7 @@ if [ -n "$password" ]
 then
   sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
 else 
-  rsync --rsync-path='sudo rsync' --progress -avz -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  rsync --rsync-path='sudo rsync' --progress -avz -e 'ssh -i $KEY -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
 fi
 
 rc=$? 
