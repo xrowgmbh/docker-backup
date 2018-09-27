@@ -77,9 +77,9 @@ echo ""
 echo "Starting rsync of $path"
 if [ -n "$password" ]
 then
-  sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
 else 
-  rsync --rsync-path='sudo rsync' --progress -avz -e 'ssh -i $KEY -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e 'ssh -i $KEY -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
 fi
 
 rc=$? 
@@ -90,6 +90,15 @@ then
 fi
 
 echo "rsync complete with no errors!"
+echo ""
+
+echo "Fixing permissions of directorys and files in $DEST"
+if [[ ${path} != *"mysql"* ]]
+then
+  find $DEST -type d | xargs -d '\n' chmod 777
+  find $DEST -type f | xargs -d '\n' chmod 666
+fi
+
 echo ""
 podlabels="$(curl -s -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods |  jq -r '.items[].metadata.name')"
 podlabels=($podlabels)
