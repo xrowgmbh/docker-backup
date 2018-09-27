@@ -79,7 +79,7 @@ if [ -n "$password" ]
 then
   sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
 else 
-  rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e 'ssh -i $KEY -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e "ssh -i $KEY -q -o StrictHostKeyChecking=no" $user@$host:$path $DEST
 fi
 
 rc=$? 
