@@ -11,7 +11,7 @@ ENV KEY=/root/.ssh/id_rsa
 RUN yum install -y centos-release-scl-rh && \
     INSTALL_PKGS="rsync tar gettext hostname bind-utils gzip rh-mariadb102  sshpass openssh openssh-clients epel-release" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
-    yum install -y jq && \
+    yum install -y jq percona-xtrabackup.x86_64 && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
     mkdir -p /backup && \

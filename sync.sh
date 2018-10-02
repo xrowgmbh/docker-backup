@@ -74,30 +74,51 @@ then
 fi
 echo ""
 
-echo "Starting rsync of $path"
 if [ -n "$password" ]
 then
-  sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  sshpass -p $password ssh -q -o StrictHostKeyChecking=no $user@$host innobackupex --help > /dev/null
+else
+  ssh -q -i $KEY -o StrictHostKeyChecking=no $user@$host innobackupex --help > /dev/null
+fi
+
+rc=$?
+if [[ $rc != 0 ]]
+then
+  echo "Innobackupex not installed on target server. Installing it to proceed..."
+  if [ -n "$password" ]
+  then
+    sshpass -p $password ssh -q -o StrictHostKeyChecking=no $user@$host yum install -y percona-xtrabackup.x86_64
+  else
+    ssh -q -i $KEY -o StrictHostKeyChecking=no $user@$host yum install -y percona-xtrabackup.x86_64
+  fi
+fi
+
+if [ $proto == "mysql" ]
+then
+  echo "Starting innobackupex"
+  ssh -q -i $KEY -o StrictHostKeyChecking=no $user@$host "innobackupex --no-timestamp --stream=xbstream /backup" | xbstream -x -C /backup/
 else 
-  rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e "ssh -i $KEY -q -o StrictHostKeyChecking=no" $user@$host:$path $DEST
-fi
-
-rc=$? 
-if [[ $rc != 0 ]] 
-then
-  echo "There was an error with the rsync. You might need to check your files."
-  exit $rc
-fi
-
-echo "rsync complete with no errors!"
-echo ""
-
-echo "Fixing permissions of directorys and files in $DEST"
-if [[ ${path} != *"mysql"* ]]
-then
-  find $DEST -type d | xargs -d '\n' chmod 777
-  find $DEST -type f | xargs -d '\n' chmod 666
-fi
+  echo "Starting rsync of $path"
+  if [ -n "$password" ]
+  then
+    sshpass -p $password rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g --exclude '*mysql*' -e 'ssh -q -o StrictHostKeyChecking=no' $user@$host:$path $DEST
+  else 
+    rsync --rsync-path='sudo rsync' --progress -avz --no-o --no-g -e --exclude '*mysql*' "ssh -i $KEY -q -o StrictHostKeyChecking=no" $user@$host:$path $DEST
+  fi
+  rc=$? 
+  if [[ $rc != 0 ]] 
+  then
+    echo "There was an error with the rsync. You might need to check your files."
+    exit $rc
+  fi 
+  if [[ ${path} != *"mysql"* ]]
+  then
+    echo "Fixing permissions of directorys and files in $DEST"
+    find $DEST -type d | xargs -d '\n' chmod 777
+    find $DEST -type f | xargs -d '\n' chmod 666
+  fi
+  echo "rsync complete with no errors!"
+fi 
 
 echo ""
 podlabels="$(curl -s -H "Authorization: Bearer $token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT/api/v1/namespaces/$namespace/pods |  jq -r '.items[].metadata.name')"
